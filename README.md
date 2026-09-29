@@ -1,48 +1,59 @@
-# Split65 NICOLA v8 - 変更済みソース
+# Split65 NICOLA Edition (v34)
 
-banroku/qmk_firmware (commit 8e8ae400) ベースの改造キーマップ。
-確定版は v8 (2026-09-22)。
+EPOMAKER Split65(無線対応分割キーボード)を、**NICOLA配列(親指シフト)+ 日本語入力最適化 + 無線活用**に仕上げたQMKファームウェアです。
+[banroku/qmk_firmware](https://github.com/banroku/qmk_firmware)(commit `8e8ae400`)をベースに、実機での長期検証を重ねて改造しました。QMKのGPL-2.0-or-laterに従い公開します。
 
-## 構成
+## このファームでできること
 
-- `split65_v8.patch` — ベースからの全変更の git パッチ(412行)
-- `keyboards/leo/epomaker_split65/keymaps/nicola/` — keymap.c + config.h(変更済み実物)
-- `users/nicola/` — nicola.c / nicola.h / jtu.h(変更済み実物)
-- `leo_epomaker_split65_nicola.hex / .bin` — 確定版ファーム(v8)
-- `split65_firmware_manual.md` — 手順書・キーマップ表・チェックリスト
-- `keymap_sheet.png` / `gen_keymap_sheet.py` — 早見表と生成スクリプト
+| 機能 | 概要 |
+|---|---|
+| NICOLA親指シフト | 両親指キー(L-SP/R-SP)+jtu(JISかな)エンジン。未確定文字の変換・濁音・半濁音対応 |
+| ぱ/ば出し分け | Shift+H=ぱ / L-SP+H=ば(NICOLA-F親指同時打鍵) |
+| モード切替 | Caps単押し=IMEオフ(冪等)・かな入力で復帰。英数/かなキーで切替 |
+| 無線 | BT1〜3スロット(Fn+Q/W/E長押しでペア)+2.4Gドングル(Fn+R)。有線へは裏面スイッチ中央+USB挿しで即復帰(再ペア不要) |
+| ソフトDFU | ピンホール短絡不要。右=直挿し+スイッチON→Fn+M / 左=Fn+M |
 
-## GitHub への取り込み方(2択)
+## ハードウェアの重要ノウハウ(このキーボード固有)
 
-### A. フォーク+ファイル上書き(最も簡単)
+- **右Shift下のスライドスイッチ=右Type-CのUSBデータ線ON/OFF**。OFFで右に直挿しすると「コード43(USBポートのリセット要求が失敗)」になる。DFU書き込み・右=マスター運用時のみON
+- **ピンホール**: 左=L-SPキー下 / 右=R-SPキー下(電源投入の瞬間にサンプル)
+- **右Type-Cはbridgeと共用**(1ポートのみ)。右への直挿し中はbridgeが物理的に繋がらない=左右通信不可。**無線モードでもbridgeは必須**(無線モジュールは左のみ・右は常にスレーブ+bridge給電)
+- 役割(マスター/スレーブ)は「USBが活性な方がマスター・どこにもUSBが無ければ左(モジュール側)」(v34)
 
-1. https://github.com/banroku/qmk_firmware を自分のアカウントにフォーク
-2. フォーク先で以下の4ファイルを編集し、このアーカイブの同名ファイルの中身を貼り付け:
-   - keyboards/leo/epomaker_split65/keymaps/nicola/keymap.c
-   - users/nicola/nicola.c
-   - users/nicola/nicola.h
-   - users/nicola/jtu.h
-3. さらに keyboards/leo/epomaker_split65/keymaps/nicola/ に config.h を新規追加
-   (内容はアーカイブの config.h をコピー)
-4. コミットメッセージ例: 「NICOLA keymap v8 for Split65 (mode toggle, handaku on SHIFT, F digits, pending-conversion thumb)」
+## フラッシュ手順
 
-### B. パッチ適用(コマンドライン)
+1. [QMK Toolbox](https://qmk.fm/toolbox) を用意
+2. 左半身: Fn+M → WB32 DFU が出る → hex を Flash
+3. 右半身: 右Type-C直挿し+右Shift下スイッチON → Fn+M → Flash → スイッチを普段の位置へ
+4. ファームは必ず**両半身同じ版**に揃える
 
+## ビルド
+
+```bash
+git clone https://github.com/banroku/qmk_firmware   # commit 8e8ae400
+# このリポジトリの差分を適用(keyboards/leo/epomaker_split65, users/nicola)
+make leo/epomaker_split65:nicola -j8
 ```
-git clone https://github.com/<あなた>/qmk_firmware
-cd qmk_firmware
-git am split65_v8.patch   # または git apply split65_v8.patch
-git push
-```
 
-## 再ビルド方法(自分のPCで)
+## 詳細ドキュメント
 
-QMK MSYS で qmk setup 後、このリポジトリで:
-```
-make leo/epomaker_split65:nicola
-```
-生成物 .build/leo_epomaker_split65_nicola.hex を QMK Toolbox で書き込み。
+- `docs/firmware_manual.md` — 使い方全般
+- `docs/changelog.md` — v1〜v34の全変更記録(デバッグの過程も含む)
+- `docs/hardware_notes.md` — ハード仕様の調査記録
 
-## 変更履歴(v1-v8)
+## ライセンス / クレジット
 
-手順書 split65_firmware_manual.md の §6 を参照。
+GPL-2.0-or-later。元実装の皆様に感謝:
+- [banroku/qmk_firmware](https://github.com/banroku/qmk_firmware) — 本ファームのベース
+- [Epomaker/Split65](https://github.com/Epomaker/Split65) — ハード公式
+- linker/wireless は zozonteq リポジトリ由来(Su (@isuua) 他)
+
+## 同梱物
+
+- `keyboards/leo/epomaker_split65/` — キーボード定義+`keymaps/nicola`(NICOLAキーマップ)
+- `users/nicola/` — NICOLA/jtuエンジン
+- `split65_v34_clean.hex/.bin` — 日常確定版(推奨)
+- `split65_v34.hex/.bin` — 診断ログ付き版(HID Consoleでログが読める)
+- `docs/` — manual / changelog(v1〜v34全記録)/ hardware_notes
+
+ビルドは上記フォルダを banroku/qmk_firmware(commit 8e8ae400)の同パスへ上書きコピーして `make leo/epomaker_split65:nicola -j8`

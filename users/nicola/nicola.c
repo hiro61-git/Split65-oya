@@ -205,17 +205,27 @@ void nicola_m_type(void) {
 
 void nicola_o_type(void) {
     if(nicola_o_key != 0) {
-        if (nicola_pending) {
-            // 未確定状態: 左親指=無変換(ひらがな/カタカナ切替), 右親指=変換
+        if (nicola_pending && nicola_m_key != 0) {
+            // v32: a CHAR followed this thumb (blend in flight) -> official NICOLA
+            // conversion keys: L-SP=katakana convert(0x8B), R-SP=kanji convert(0x8A).
+            // A LONE thumb release (no char: nicola_m_key==0) sends NOTHING - that
+            // raw key with no composition behind it is what hit per-PC IME global
+            // bindings (the v30 finding). nicola_m_key is cleared by send paths,
+            // so this only fires when the blend actually involved a char.
             if (nicola_o_key == NG_SHFTL) {
-                tap_code(0x8B); // Muhenkan
+                tap_code(0x8B); // Muhenkan: katakana conversion (NICOLA spec)
             } else {
-                tap_code(0x8A); // Henkan
+                tap_code(0x8A); // Henkan: kanji conversion (NICOLA spec)
             }
+        } else if (nicola_pending) {
+            // v32: lone thumb release with NO char in flight (m_key==0) sends
+            // NOTHING - the raw 0x8B/0x8A with no composition behind it is what
+            // hit per-PC IME global bindings (the v30 finding).
         } else {
             send_string(" ");
         }
     }
+    nicola_o_key = 0; // v9: sent -> clear so timeout/flash cannot fire again
 }
 
 void nicola_om_type(void) {
@@ -334,6 +344,7 @@ void nicola_om_type(void) {
             case NG_SLSH: send_string("xo"); break;
         }
     }
+    nicola_o_key = 0; // v9: combo fired -> thumb timeout must not emit again
 }
 
 //static uint32_t timer_deadline = 0;
